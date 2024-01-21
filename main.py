@@ -5,7 +5,6 @@ import asyncio
 import os
 import pickle
 import re
-import signal
 import sqlite3
 import sys
 from datetime import datetime, timedelta
@@ -181,7 +180,7 @@ async def message_callback(client, room, event):
             )
 
         for link in youtube_links:
-            video_id = link.split("v=")[-1]
+            video_id = link.split("v=")[-1].split("&")[0].split("/")[-1]
             if is_music(youtube, video_id):
                 try:
                     cursor.execute(
@@ -248,23 +247,12 @@ async def get_client():
     return client
 
 
-def sigterm_handler(signum, frame):
-    """Gracefully stop syncing on SIGTERM."""
-    asyncio.get_event_loop().stop()
-
-
 async def main():
     """Get DB and Matrix client ready, and start syncing."""
     define_tables()
     client = await get_client()
-    signal.signal(signal.SIGTERM, sigterm_handler)
     sync_token = load_sync_token()
-    try:
-        await client.sync_forever(30000, full_state=True, since=sync_token)
-    finally:
-        conn.close()
-        await client.logout()
-        sys.exit()
+    await client.sync_forever(30000, full_state=True, since=sync_token)
 
 
 if __name__ == "__main__":
