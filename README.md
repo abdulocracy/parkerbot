@@ -17,17 +17,20 @@ generates weekly playlists from them.
    ```shell
    source .env
    ```
-3. Execute the app:
+5. Execute the app:
    ```shell
    ./main.py
    ```
 
 ## Running as a container
 
-1. Customize the compose.yml if necessary, you might want to change the data
+1. Customize the [compose.yml](compose.yml) if necessary, you might want to change the data
    volume's path or make it a named volume.
-3. Copy [example.env](example.env) to `.env` and customize it.
-2. Run the container, this is an example with `podman-compose`:
+2. Copy [example.env](example.env) to `.env` and customize it.
+3. Run locally as described above at least once on a machine with a web browser.
+   This is needed to get a valid `token.pickle` for YouTube. Copy it to the data
+   directory where you want to run the container.
+4. Run the container, this is an example with `podman-compose`:
    ```shell
    podman-compose up -d
    ```
