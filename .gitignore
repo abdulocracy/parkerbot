@@ -5,3 +5,4 @@ venv
 *.pickle
 *.json
 *.swp
+sync_token
