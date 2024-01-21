@@ -27,6 +27,7 @@ generates weekly playlists from them.
 1. Customize the compose.yml if necessary, you might want to change the data
    volume's path or make it a named volume.
 3. Copy [example.env](example.env) to `.env` and customize it.
-2. ```shell
+2. Run the container, this is an example with `podman-compose`:
+   ```shell
    podman-compose up -d
    ```
