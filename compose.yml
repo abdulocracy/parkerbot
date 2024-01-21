@@ -1,0 +1,6 @@
+services:
+  parkerbot:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/data

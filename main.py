@@ -5,22 +5,27 @@ import asyncio
 import os
 import pickle
 import re
+import signal
 import sqlite3
+import sys
 from datetime import datetime, timedelta
 
-from dotenv import load_dotenv
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from nio import AsyncClient, ClientConfig, RoomMessageText, SyncResponse
+from nio import AsyncClient, RoomMessageText, SyncResponse
 
-load_dotenv()
-DB_PATH = os.getenv("DB_PATH")
+DATA_DIR = os.getenv("DATA_DIR", "./")
+DB_PATH = os.path.join(DATA_DIR, "parkerbot.sqlite3")
+TOKEN_PATH = os.path.join(DATA_DIR, "sync_token")
+PICKLE_PATH = os.path.join(DATA_DIR, "token.pickle")
+
 MATRIX_SERVER = os.getenv("MATRIX_SERVER")
 MATRIX_ROOM = os.getenv("MATRIX_ROOM")
 MATRIX_USER = os.getenv("MATRIX_USER")
 MATRIX_PASSWORD = os.getenv("MATRIX_PASSWORD")
-PLAYLIST_TITLE = os.getenv("PLAYLIST_TITLE")
+
+YOUTUBE_PLAYLIST_TITLE = os.getenv("YOUTUBE_PLAYLIST_TITLE")
 YOUTUBE_CLIENT_SECRETS_FILE = os.getenv("YOUTUBE_CLIENT_SECRETS_FILE")
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
@@ -61,9 +66,9 @@ def define_tables():
 def get_authenticated_service():
     """Get an authentivated YouTube service."""
     credentials = None
-    # The file token.pickle stores the user's access and refresh tokens.
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
+    # Stores the user's access and refresh tokens.
+    if os.path.exists(PICKLE_PATH):
+        with open(PICKLE_PATH, "rb") as token:
             credentials = pickle.load(token)
 
     # If there are no valid credentials available, let the user log in.
@@ -77,7 +82,7 @@ def get_authenticated_service():
             )
             credentials = flow.run_local_server(port=8080)
             # Save the credentials for the next run
-            with open("token.pickle", "wb") as token:
+            with open(PICKLE_PATH, "wb") as token:
                 pickle.dump(credentials, token)
 
     return build("youtube", "v3", credentials=credentials)
@@ -111,7 +116,7 @@ def make_playlist(youtube, title):
 
 def get_or_make_playlist(youtube, monday_date):
     """Get ID of playlist for given Monday's week, make if doesn't exist."""
-    playlist_title = f"{PLAYLIST_TITLE} {monday_date.strftime('%Y-%m-%d')}"
+    playlist_title = f"{YOUTUBE_PLAYLIST_TITLE} {monday_date.strftime('%Y-%m-%d')}"
 
     # Check if playlist exists in the database
     cursor.execute(
@@ -216,20 +221,23 @@ async def message_callback(client, room, event):
 
 
 async def sync_callback(response):
+    """Save Matrix sync token."""
     # Save the sync token to a file or handle it as needed
-    with open("sync_token", "w") as f:
+    with open(TOKEN_PATH, "w") as f:
         f.write(response.next_batch)
 
 
 def load_sync_token():
+    """Get an existing Matrix sync token if it exists."""
     try:
-        with open("sync_token", "r") as file:
+        with open(TOKEN_PATH, "r") as file:
             return file.read().strip()
     except FileNotFoundError:
         return None
 
 
 async def get_client():
+    """Returns configured and logged in Matrix client."""
     client = AsyncClient(MATRIX_SERVER, MATRIX_USER)
     client.add_event_callback(
         lambda room, event: message_callback(client, room, event), RoomMessageText
@@ -240,12 +248,24 @@ async def get_client():
     return client
 
 
+def sigterm_handler(signum, frame):
+    """Gracefully stop syncing on SIGTERM."""
+    asyncio.get_event_loop().stop()
+
+
 async def main():
     """Get DB and Matrix client ready, and start syncing."""
     define_tables()
     client = await get_client()
+    signal.signal(signal.SIGTERM, sigterm_handler)
     sync_token = load_sync_token()
-    await client.sync_forever(30000, full_state=True, since=sync_token)
+    try:
+        await client.sync_forever(30000, full_state=True, since=sync_token)
+    finally:
+        conn.close()
+        await client.logout()
+        sys.exit()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
