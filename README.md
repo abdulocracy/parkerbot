@@ -12,7 +12,7 @@ generates weekly playlists from them.
    source ./venv/bin/activate
    pip3 install -r requirements.txt
    ```
-3. Copy `[example.env](example.env)` to `.env`, customize it.
+3. Copy [example.env](example.env) to `.env`, customize it.
 4. Source `.env`:
    ```shell
    source .env
@@ -26,7 +26,7 @@ generates weekly playlists from them.
 
 1. Customize the compose.yml if necessary, you might want to change the data
    volume's path or make it a named volume.
-3. Copy `[example.env](example.env)` to `.env` and customize it.
+3. Copy [example.env](example.env) to `.env` and customize it.
 2. ```shell
    podman-compose up -d
    ```

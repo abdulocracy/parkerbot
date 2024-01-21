@@ -6,3 +6,4 @@ venv
 *.json
 *.swp
 sync_token
+data
