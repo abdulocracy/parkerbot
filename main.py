@@ -14,7 +14,7 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient import errors
-from nio import AsyncClient, RoomMessageText, SyncResponse
+from nio import AsyncClient, RoomMessageText, SyncResponse, UploadResponse
 
 DATA_DIR = os.getenv("DATA_DIR", "./")
 DB_PATH = os.path.join(DATA_DIR, "parkerbot.sqlite3")
@@ -211,19 +211,24 @@ async def message_callback(client, room, event):
                 message_type="m.room.message",
                 content={"msgtype": "m.text", "body": intro_message},
             )
-            with open("./parker.gif", "rb") as gif_file:
+            with open("./parker.gif", "rb") as gif_file: # this is broken as shit
                 response = await client.upload(gif_file, content_type="image/gif")
-            gif_uri = response[0]
-            await client.room_send(
-                room_id=room_id,
-                message_type="m.room.message",
-                content={
-                    "msgtype": "m.image",
-                    "url": gif_uri,
-                    "body": "parker.gif",
-                    "info": {"mimetype": "image/gif"},
-                },
-            )
+            if isinstance(response, UploadResponse):
+                print("Image was uploaded successfully to server. ")
+                gif_uri = response.content_uri
+                await client.room_send(
+                    room_id=room_id,
+                    message_type="m.room.message",
+                    content={
+                        "msgtype": "m.image",
+                        "url": gif_uri,
+                        "body": "parker.gif",
+                        "info": {"mimetype": "image/gif"},
+                    },
+                )
+            else:
+                print(f"Failed to upload image. Failure response: {resp}")
+
 
         if body == "!pow" and current_time - timestamp_sec < datetime.timedelta(
             seconds=30
