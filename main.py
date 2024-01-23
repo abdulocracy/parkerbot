@@ -212,9 +212,7 @@ async def message_callback(client, room, event):
                 content={"msgtype": "m.text", "body": intro_message},
             )
             with open("./parker.gif", "rb") as gif_file:
-                response = await client.upload(
-                    gif_file.read(), content_type="image/gif"
-                )
+                response = await client.upload(gif_file, content_type="image/gif")
             gif_uri = response.content_uri
             await client.room_send(
                 room_id=room_id,
@@ -227,7 +225,9 @@ async def message_callback(client, room, event):
                 },
             )
 
-        if body == "!pow" and current_time - timestamp_sec < datetime.timedelta(seconds=30):
+        if body == "!pow" and current_time - timestamp_sec < datetime.timedelta(
+            seconds=30
+        ):
             playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
             reply_msg = f"{sender}, here's the playlist of the week: {playlist_link}"
             await client.room_send(
