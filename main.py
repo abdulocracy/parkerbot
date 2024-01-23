@@ -185,7 +185,7 @@ async def message_callback(client, room, event):
     youtube_link_pattern = r"(https?://(?:www\.|music\.)?youtube\.com/(?!playlist\?list=)watch\?v=[\w-]+|https?://youtu\.be/[\w-]+)"
     sender = event.sender
     if sender != MATRIX_USER:
-        body = event.body
+        body = event.body.strip()
         timestamp = event.server_timestamp
         room_id = room.room_id
         monday_date = get_monday_date(timestamp)
@@ -197,6 +197,16 @@ async def message_callback(client, room, event):
             event.server_timestamp / 1000, datetime.UTC
         )  # milisec to sec
         current_time = datetime.now(datetime.UTC)
+
+        if body == "!parkerbot" and current_time - timestamp_sec < timedelta(seconds=30):
+            intro_message = ("Hi, I'm ParkerBot! I generate YouTube playlists "
+                             "from links sent to this channel. You can find my source code here: "
+                             "https://git.abdulocra.cy/abdulocracy/parkerbot")
+            await client.room_send(
+                room_id=room_id,
+                message_type="m.room.message",
+                content={"msgtype": "m.text", "body": intro_message}
+            )
 
         if body == "!pow" and current_time - timestamp_sec < timedelta(seconds=30):
             playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
