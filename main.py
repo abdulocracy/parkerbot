@@ -177,7 +177,10 @@ def is_music(youtube, video_id):
     video_details = youtube.videos().list(id=video_id, part="snippet").execute()
 
     # Check if the video category is Music (typically category ID 10)
-    return video_details["items"][0]["snippet"]["categoryId"] == "10"
+    return video_details["items"][0]["snippet"]["categoryId"] in (
+        "10",
+        "24",
+    )  # music, entertainment
 
 
 async def message_callback(client, room, event):
@@ -211,7 +214,7 @@ async def message_callback(client, room, event):
                 message_type="m.room.message",
                 content={"msgtype": "m.text", "body": intro_message},
             )
-            with open("./parker.gif", "rb") as gif_file: # this is broken as shit
+            with open("./parker.gif", "rb") as gif_file:  # this is broken as shit
                 response = await client.upload(gif_file, content_type="image/gif")
             if isinstance(response, UploadResponse):
                 print("Image was uploaded successfully to server. ")
@@ -227,8 +230,7 @@ async def message_callback(client, room, event):
                     },
                 )
             else:
-                print(f"Failed to upload image. Failure response: {resp}")
-
+                print(f"Failed to upload image. Failure response: {response}")
 
         if body == "!pow" and current_time - timestamp_sec < datetime.timedelta(
             seconds=30
