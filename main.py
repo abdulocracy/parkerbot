@@ -213,7 +213,7 @@ async def message_callback(client, room, event):
             )
             with open("./parker.gif", "rb") as gif_file:
                 response = await client.upload(gif_file, content_type="image/gif")
-            gif_uri = response.content_uri
+            gif_uri = response[0]
             await client.room_send(
                 room_id=room_id,
                 message_type="m.room.message",
