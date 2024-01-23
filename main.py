@@ -194,7 +194,7 @@ async def message_callback(client, room, event):
         youtube_links = re.findall(youtube_link_pattern, body)
 
         timestamp_sec = datetime.datetime.fromtimestamp(
-            event.server_timestamp / 1000, datetime.datetime.UTC
+            event.server_timestamp / 1000, datetime.UTC
         )  # milisec to sec
         current_time = datetime.datetime.now(datetime.UTC)
 
