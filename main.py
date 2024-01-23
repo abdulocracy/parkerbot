@@ -198,7 +198,7 @@ async def message_callback(client, room, event):
         )  # milisec to sec
         current_time = datetime.datetime.now(datetime.UTC)
 
-        if body == "!parkerbot" and current_time - timestamp_sec < timedelta(
+        if body == "!parkerbot" and current_time - timestamp_sec < datetime.timedelta(
             seconds=30
         ):
             intro_message = (
@@ -227,7 +227,7 @@ async def message_callback(client, room, event):
                 },
             )
 
-        if body == "!pow" and current_time - timestamp_sec < timedelta(seconds=30):
+        if body == "!pow" and current_time - timestamp_sec < datetime.timedelta(seconds=30):
             playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
             reply_msg = f"{sender}, here's the playlist of the week: {playlist_link}"
             await client.room_send(
