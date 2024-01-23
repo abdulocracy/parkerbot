@@ -198,14 +198,33 @@ async def message_callback(client, room, event):
         )  # milisec to sec
         current_time = datetime.now(datetime.UTC)
 
-        if body == "!parkerbot" and current_time - timestamp_sec < timedelta(seconds=30):
-            intro_message = ("Hi, I'm ParkerBot! I generate YouTube playlists "
-                             "from links sent to this channel. You can find my source code here: "
-                             "https://git.abdulocra.cy/abdulocracy/parkerbot")
+        if body == "!parkerbot" and current_time - timestamp_sec < timedelta(
+            seconds=30
+        ):
+            intro_message = (
+                "Hi, I'm ParkerBot! I generate YouTube playlists from links "
+                "sent to this channel. You can find my source code here: "
+                "https://git.abdulocra.cy/abdulocracy/parkerbot"
+            )
             await client.room_send(
                 room_id=room_id,
                 message_type="m.room.message",
-                content={"msgtype": "m.text", "body": intro_message}
+                content={"msgtype": "m.text", "body": intro_message},
+            )
+            with open("./parker.gif", "rb") as gif_file:
+                response = await client.upload(
+                    gif_file.read(), content_type="image/gif"
+                )
+            gif_uri = response.content_uri
+            await client.room_send(
+                room_id=room_id,
+                message_type="m.room.message",
+                content={
+                    "msgtype": "m.image",
+                    "url": gif_uri,
+                    "body": "parker.gif",
+                    "info": {"mimetype": "image/gif"},
+                },
             )
 
         if body == "!pow" and current_time - timestamp_sec < timedelta(seconds=30):
