@@ -104,7 +104,7 @@ def get_authenticated_service():
 
 def get_monday_date(timestamp):
     """Get Monday of the week for the given timestamp. Weeks start on Monday."""
-    date = datetime.utcfromtimestamp(timestamp / 1000)
+    date = datetime.fromtimestamp(timestamp / 1000, datetime.UTC)
     return date - timedelta(days=date.weekday())
 
 
@@ -193,10 +193,10 @@ async def message_callback(client, room, event):
         playlist_id = get_or_make_playlist(youtube, monday_date)
         youtube_links = re.findall(youtube_link_pattern, body)
 
-        timestamp_sec = datetime.utcfromtimestamp(
-            event.server_timestamp / 1000
+        timestamp_sec = datetime.fromtimestamp(
+            event.server_timestamp / 1000, datetime.UTC
         )  # milisec to sec
-        current_time = datetime.utcnow()
+        current_time = datetime.now(datetime.UTC)
 
         if body == "!pow" and current_time - timestamp_sec < timedelta(seconds=30):
             playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
