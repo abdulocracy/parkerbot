@@ -139,7 +139,7 @@ def make_playlist(youtube, title):
 
 
 def get_or_make_playlist(conn, cursor, youtube, playlist_date):
-    """Get ID of playlist for given Monday's week, make if doesn't exist."""
+    """Get ID of playlist with given named suffix, make if doesn't exist."""
     title = f"{YOUTUBE_PLAYLIST_TITLE} {playlist_date.strftime('%Y-%m-%d')}"
 
     cursor.execute("SELECT playlist_id FROM playlists WHERE title = ?", (title,))
@@ -232,6 +232,16 @@ async def send_playlist_of_week(client, sender, room_id, playlist_id):
         content={"msgtype": "m.text", "body": reply_msg},
     )
 
+async def send_playlist_of_week(client, sender, room_id, playlist_id):
+    """Sends playlist of all time in reply to sender, in room with room_id."""
+    playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
+    reply_msg = f"{sender}, here's the playlist of all time: {playlist_link}"
+    await client.room_send(
+        room_id=room_id,
+        message_type="m.room.message",
+        content={"msgtype": "m.text", "body": reply_msg},
+    )
+
 
 async def message_callback(conn, cursor, youtube, client, room, event):
     """Event handler for received messages."""
@@ -241,6 +251,9 @@ async def message_callback(conn, cursor, youtube, client, room, event):
         timestamp = event.server_timestamp
         playlist_id = get_or_make_playlist(
             conn, cursor, youtube, monday_date(timestamp)
+        )
+        all_playlist_id = get_or_make_playlist(
+            conn, cursor, youtube, datetime.datetime.fromtimestamp(0)
         )
 
         timestamp_sec = datetime.datetime.fromtimestamp(
@@ -253,7 +266,11 @@ async def message_callback(conn, cursor, youtube, client, room, event):
             await send_intro_message(client, sender, room.room_id)
             return
 
-        if body == "!pow" and recent:
+        if body == "!week" and recent:
+            await send_playlist_of_week(client, sender, room.room_id, playlist_id)
+            return
+
+        if body == "!all" and recent:
             await send_playlist_of_week(client, sender, room.room_id, playlist_id)
             return
 
@@ -270,8 +287,9 @@ async def message_callback(conn, cursor, youtube, client, room, event):
                 if in_playlist(cursor, video_id, playlist_id):
                     print(f"Track is already in this week's playlist: {link}")
                 else:
-                    # Add video to playlist and record it in the database
+                    # Add video to playlists and record it in the database
                     add_video_to_playlist(youtube, playlist_id, video_id)
+                    add_video_to_playlist(youtube, all_playlist_id, video_id)
                     with conn:
                         cursor.execute(
                             (
