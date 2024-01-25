@@ -232,7 +232,7 @@ async def send_playlist_of_week(client, sender, room_id, playlist_id):
         content={"msgtype": "m.text", "body": reply_msg},
     )
 
-async def send_playlist_of_week(client, sender, room_id, playlist_id):
+async def send_playlist_of_all(client, sender, room_id, playlist_id):
     """Sends playlist of all time in reply to sender, in room with room_id."""
     playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
     reply_msg = f"{sender}, here's the playlist of all time: {playlist_link}"
@@ -271,7 +271,7 @@ async def message_callback(conn, cursor, youtube, client, room, event):
             return
 
         if body == "!all" and recent:
-            await send_playlist_of_week(client, sender, room.room_id, playlist_id)
+            await send_playlist_of_all(client, sender, room.room_id, all_playlist_id)
             return
 
         youtube_link_pattern = (
