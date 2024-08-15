@@ -232,6 +232,7 @@ async def send_playlist_of_week(client, sender, room_id, playlist_id):
         content={"msgtype": "m.text", "body": reply_msg},
     )
 
+
 async def send_playlist_of_all(client, sender, room_id, playlist_id):
     """Sends playlist of all time in reply to sender, in room with room_id."""
     playlist_link = f"https://www.youtube.com/playlist?list={playlist_id}"
