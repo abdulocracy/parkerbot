@@ -181,9 +181,12 @@ def add_video_to_playlist(youtube, playlist_id, video_id, retry_count=6):
 def is_music(youtube, video_id):
     """Check whether a YouTube video is music."""
     video_details = youtube.videos().list(id=video_id, part="snippet").execute()
+    items = video_details.get("items")
+    if not items:
+        return False
 
     # Check if the video category is Music (typically category ID 10)
-    return video_details["items"][0]["snippet"]["categoryId"] in (
+    return items[0]["snippet"].get("categoryId") in (
         "10",  # music
         "24",  # entertainment
     )
