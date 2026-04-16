@@ -308,7 +308,7 @@ async def message_callback(conn, cursor, youtube, client, room, event):
             # Send the title to the channel so people know what the link is
             # Only do this for recent messages to prevent spam during backwards-sync
             if recent:
-                plain_text = f"🎵 {title}"
+                plain_text = f"{title}"
                 if channel:
                     plain_text += f" - {channel}"
                 
