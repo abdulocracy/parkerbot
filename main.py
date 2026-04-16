@@ -177,29 +177,31 @@ def add_video_to_playlist(youtube, playlist_id, video_id, retry_count=6):
                 continue
             raise error
 
+
 def get_video_info(youtube, video_id):
-    """Check whether a YouTube video is music and return its title."""
+    """Check whether a YouTube video is music and return its title and channel."""
     try:
         video_details = youtube.videos().list(id=video_id, part="snippet").execute()
         
         # Check if the video actually exists/is accessible
         if not video_details.get("items"):
-            return False, "[Video unavailable or private]"
+            return False, "[Video unavailable or private]", ""
 
         snippet = video_details["items"][0]["snippet"]
         
         # Check if the video category is Music (10) or Entertainment (24)
         is_music = snippet.get("categoryId") in ("10", "24")
         title = snippet.get("title", "[Unknown Title]")
+        channel = snippet.get("channelTitle", "[Unknown Channel]")
         
-        return is_music, title
+        return is_music, title, channel
 
     except errors.HttpError as error:
         print(f"YouTube API error fetching info for {video_id}: {error}")
-        return False, "[Error fetching title]"
+        return False, "[Error fetching title]", ""
     except Exception as e:
         print(f"Unexpected error fetching info for {video_id}: {e}")
-        return False, "[Error fetching title]"
+        return False, "[Error fetching title]", ""
 
 
 async def send_intro_message(client, sender, room_id):
@@ -256,6 +258,7 @@ async def send_playlist_of_all(client, sender, room_id, playlist_id):
         content={"msgtype": "m.text", "body": reply_msg},
     )
 
+
 async def message_callback(conn, cursor, youtube, client, room, event):
     """Event handler for received messages."""
     sender = event.sender
@@ -273,7 +276,9 @@ async def message_callback(conn, cursor, youtube, client, room, event):
             event.server_timestamp / 1000, datetime.UTC  # millisec to sec
         )
         current_time = datetime.datetime.now(datetime.UTC)
-        recent = current_time - timestamp_sec < datetime.timedelta(seconds=30)
+        
+        # Account for up to 5 minutes of clock drift
+        recent = abs(current_time - timestamp_sec) < datetime.timedelta(minutes=5)
 
         if body == "!parkerbot" and recent:
             await send_intro_message(client, sender, room.room_id)
@@ -296,16 +301,20 @@ async def message_callback(conn, cursor, youtube, client, room, event):
         for link in youtube_links:
             video_id = link.split("v=")[-1].split("&")[0].split("/")[-1]
             
-            # Safely fetch the category check and the title
-            is_music_vid, title = get_video_info(youtube, video_id)
+            # Safely fetch the category check, title, and channel
+            is_music_vid, title, channel = get_video_info(youtube, video_id)
             
             # Send the title to the channel so people know what the link is
             # Only do this for recent messages to prevent spam during backwards-sync
             if recent:
+                display_text = f"▶️ {title}"
+                if channel:
+                    display_text += f" - {channel}"
+                    
                 await client.room_send(
                     room_id=room.room_id,
                     message_type="m.room.message",
-                    content={"msgtype": "m.text", "body": f"▶️ {title}"},
+                    content={"msgtype": "m.text", "body": display_text},
                 )
 
             # Only add to the playlist if it's categorized as music/entertainment
