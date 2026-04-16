@@ -307,14 +307,23 @@ async def message_callback(conn, cursor, youtube, client, room, event):
             # Send the title to the channel so people know what the link is
             # Only do this for recent messages to prevent spam during backwards-sync
             if recent:
-                display_text = f"▶️ {title}"
+                plain_text = f"🎵 {title}"
                 if channel:
-                    display_text += f" - {channel}"
+                    plain_text += f" - {channel}"
+                
+                # Escape HTML characters to prevent broken rendering in Matrix
+                escaped_text = html.escape(plain_text)
+                html_text = f"<em><font color='#808080'>{escaped_text}</font></em>"
                     
                 await client.room_send(
                     room_id=room.room_id,
                     message_type="m.room.message",
-                    content={"msgtype": "m.text", "body": display_text},
+                    content={
+                        "msgtype": "m.text", 
+                        "body": plain_text,
+                        "format": "org.matrix.custom.html",
+                        "formatted_body": html_text
+                    },
                 )
 
             # Only add to the playlist if it's categorized as music/entertainment
