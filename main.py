@@ -177,16 +177,29 @@ def add_video_to_playlist(youtube, playlist_id, video_id, retry_count=6):
                 continue
             raise error
 
+def get_video_info(youtube, video_id):
+    """Check whether a YouTube video is music and return its title."""
+    try:
+        video_details = youtube.videos().list(id=video_id, part="snippet").execute()
+        
+        # Check if the video actually exists/is accessible
+        if not video_details.get("items"):
+            return False, "[Video unavailable or private]"
 
-def is_music(youtube, video_id):
-    """Check whether a YouTube video is music."""
-    video_details = youtube.videos().list(id=video_id, part="snippet").execute()
+        snippet = video_details["items"][0]["snippet"]
+        
+        # Check if the video category is Music (10) or Entertainment (24)
+        is_music = snippet.get("categoryId") in ("10", "24")
+        title = snippet.get("title", "[Unknown Title]")
+        
+        return is_music, title
 
-    # Check if the video category is Music (typically category ID 10)
-    return video_details["items"][0]["snippet"]["categoryId"] in (
-        "10",  # music
-        "24",  # entertainment
-    )
+    except errors.HttpError as error:
+        print(f"YouTube API error fetching info for {video_id}: {error}")
+        return False, "[Error fetching title]"
+    except Exception as e:
+        print(f"Unexpected error fetching info for {video_id}: {e}")
+        return False, "[Error fetching title]"
 
 
 async def send_intro_message(client, sender, room_id):
@@ -243,7 +256,6 @@ async def send_playlist_of_all(client, sender, room_id, playlist_id):
         content={"msgtype": "m.text", "body": reply_msg},
     )
 
-
 async def message_callback(conn, cursor, youtube, client, room, event):
     """Event handler for received messages."""
     sender = event.sender
@@ -283,7 +295,21 @@ async def message_callback(conn, cursor, youtube, client, room, event):
 
         for link in youtube_links:
             video_id = link.split("v=")[-1].split("&")[0].split("/")[-1]
-            if is_music(youtube, video_id):
+            
+            # Safely fetch the category check and the title
+            is_music_vid, title = get_video_info(youtube, video_id)
+            
+            # Send the title to the channel so people know what the link is
+            # Only do this for recent messages to prevent spam during backwards-sync
+            if recent:
+                await client.room_send(
+                    room_id=room.room_id,
+                    message_type="m.room.message",
+                    content={"msgtype": "m.text", "body": f"▶️ {title}"},
+                )
+
+            # Only add to the playlist if it's categorized as music/entertainment
+            if is_music_vid:
                 message_id = record_message(conn, cursor, sender, link, timestamp)
                 if in_playlist(cursor, video_id, playlist_id):
                     print(f"Track is already in this week's playlist: {link}")
