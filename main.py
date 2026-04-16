@@ -4,6 +4,7 @@
 import argparse
 import asyncio
 import datetime
+import html
 import os
 import pickle
 import re
@@ -313,7 +314,7 @@ async def message_callback(conn, cursor, youtube, client, room, event):
                 
                 # Escape HTML characters to prevent broken rendering in Matrix
                 escaped_text = html.escape(plain_text)
-                html_text = f"<em><font color='#808080'>{escaped_text}</font></em>"
+                html_text = f"<em><span data-mx-color='#808080'>{escaped_text}</span></em>"
                     
                 await client.room_send(
                     room_id=room.room_id,
